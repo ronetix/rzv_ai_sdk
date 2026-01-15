@@ -5,7 +5,7 @@ PV="0.90"
 
 S = "${WORKDIR}"
 
-COMPATIBLE_MACHINE = "(rzv2n-dev|rzv2n-evk)"
+COMPATIBLE_MACHINE = "(rzv2n-dev|rzv2n-evk|rnx-rzv2n-smarc)"
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 inherit deploy

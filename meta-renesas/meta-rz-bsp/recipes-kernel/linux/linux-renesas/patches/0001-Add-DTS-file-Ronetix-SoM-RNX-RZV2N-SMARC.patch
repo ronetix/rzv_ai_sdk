@@ -1,0 +1,730 @@
+From 8477b71495fa40013f680ee061a06731a9bd8d5f Mon Sep 17 00:00:00 2001
+From: Ilko Iliev <iliev@ronetix.at>
+Date: Wed, 14 Jan 2026 18:43:31 +0100
+Subject: [PATCH] Add DTS file Ronetix SoM RNX-RZV2N-SMARC
+
+Signed-off-by: Ilko Iliev <iliev@ronetix.at>
+---
+ arch/arm64/boot/dts/renesas/Makefile          |   1 +
+ .../boot/dts/renesas/rnx-rzv2n-smarc.dts      | 696 ++++++++++++++++++
+ 2 files changed, 697 insertions(+)
+ create mode 100644 arch/arm64/boot/dts/renesas/rnx-rzv2n-smarc.dts
+
+diff --git a/arch/arm64/boot/dts/renesas/Makefile b/arch/arm64/boot/dts/renesas/Makefile
+index 88787278df18..fbe1668e26ad 100644
+--- a/arch/arm64/boot/dts/renesas/Makefile
++++ b/arch/arm64/boot/dts/renesas/Makefile
+@@ -94,6 +94,7 @@ dtb-$(CONFIG_ARCH_R9A09G047) += r9a09g047e54-smarc.dtb
+ dtb-$(CONFIG_ARCH_R9A09G057) += r9a09g057h4-evk-ver1.dtb
+ dtb-$(CONFIG_ARCH_R9A09G056) += r9a09g056n44-dev.dtb
+ dtb-$(CONFIG_ARCH_R9A09G056) += r9a09g056n44-evk.dtb
++dtb-$(CONFIG_ARCH_R9A09G056) += rnx-rzv2n-smarc.dtb
+ 
+ dtb-$(CONFIG_ARCH_RCAR_GEN3) += draak-ebisu-panel-aa104xd12.dtbo
+ dtb-$(CONFIG_ARCH_RCAR_GEN3) += salvator-panel-aa104xd12.dtbo
+diff --git a/arch/arm64/boot/dts/renesas/rnx-rzv2n-smarc.dts b/arch/arm64/boot/dts/renesas/rnx-rzv2n-smarc.dts
+new file mode 100644
+index 000000000000..0d1517f7d401
+--- /dev/null
++++ b/arch/arm64/boot/dts/renesas/rnx-rzv2n-smarc.dts
+@@ -0,0 +1,696 @@
++// SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
++/*
++ * Device Tree Source for the RZ/V2N EVK Alpha board
++ *
++ * Copyright (C) 2024 Renesas Electronics Corp.
++ */
++
++/dts-v1/;
++#include "r9a09g056.dtsi"
++#include <dt-bindings/pinctrl/rzg2l-pinctrl.h>
++#include <dt-bindings/gpio/gpio.h>
++
++
++/ {
++	model = "Ronetix RNX-RZV2N-SMARC";
++	compatible = "renesas,r9a09g056n44-evk", "renesas,r9a09g056n44", "renesas,r9a09g056";
++
++	aliases {
++		i2c0 = &i2c0;
++		i2c1 = &i2c1;
++		i2c2 = &i2c2;
++		i2c3 = &i2c3;
++		i2c8 = &i2c8;
++		serial0 = &scif;
++		mmc0 = &sdhi0;
++		mmc1 = &sdhi1;
++		ethernet0 = &eth0;
++		ethernet1 = &eth1;
++	};
++
++	chosen {
++		bootargs = "ignore_loglevel";
++		stdout-path = "serial0:115200n8";
++	};
++
++	memory@48000000 {
++		device_type = "memory";
++		/* 4 GB
++		 * first 128MB is reserved for secure area. */
++		reg = <0x0 0x48000000 0x0 0xF8000000>;
++	};
++
++	reserved-memory {
++		#address-cells = <2>;
++		#size-cells = <2>;
++		ranges;
++
++		global_cma: linux,cma@58000000 {
++			compatible = "shared-dma-pool";
++			linux,cma-default;
++			reusable;
++			reg = <0x0 0x58000000 0x0 0x10000000>;
++		};
++
++		mmp_reserved: linux,multimedia {
++			compatible = "shared-dma-pool";
++			reusable;
++			reg = <0x00000000 0x68000000 0x0 0x10000000>;
++		};
++
++		isp: ISP@90000000 {
++			compatible = "shared-dma-pool";
++			reusable;
++			reg = <0x0 0x90000000 0x0 0x18000000>;
++		};
++
++		opencva_reserved: OpenCVA@A8000000 {
++			reusable;
++			reg = <0x0 0xA8000000 0x0 0x7CFF000>;
++		};
++
++		shared_drp_reserved: SharedDRP@AFCFF000 {
++			reusable;
++			reg = <0x0 0xAFCFF000 0x0 0x00001000>;
++		};
++
++		drp_codec: DRP-Codec@AFD00000 {
++			reusable;
++			reg = <0x0 0xAFD00000 0x0 0x300000>;
++		};
++
++		image_buf0: image_buf@B0000000 {
++			compatible = "shared-dma-pool";
++			reusable;
++			reg = <0x0 0xB0000000 0x0 0x4000000>;
++			label = "image_buf0";
++		};
++
++		cru_func: cru_buffer@B4000000 {
++			compatible = "shared-dma-pool";
++			reusable;
++			reg = <0x0 0xB4000000 0x0 0x16400000>;
++		};
++
++		drp_reserved: DRP-AI@D0000000 {
++			reusable;
++			reg = <0x0 0xD0000000 0x0 0x20000000>;
++		};
++	};
++
++	mmngr {
++		compatible = "renesas,mmngr";
++		memory-region = <&mmp_reserved>;
++	};
++
++	mmngrbuf {
++		compatible = "renesas,mmngrbuf";
++	};
++
++	vspm_if {
++		compatible = "renesas,vspm_if";
++	};
++
++	leds {
++		compatible = "gpio-leds";
++
++		led-0 {
++			label = "heartbeat";
++			gpios = <&pinctrl RZG2L_GPIO(10, 5) GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "heartbeat";
++			default-state = "off";
++		};
++	};
++	
++	reg_1p8v: regulator0 {
++		compatible = "regulator-fixed";
++
++		regulator-name = "fixed-1.8V";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <1800000>;
++		regulator-boot-on;
++		regulator-always-on;
++	};
++
++	reg_3p3v: regulator1 {
++		compatible = "regulator-fixed";
++
++		regulator-name = "fixed-3.3V";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		regulator-boot-on;
++		regulator-always-on;
++	};
++
++	vccq_sdhi1: regulator-vccq-sdhi1 {
++		compatible = "regulator-gpio";
++
++		regulator-name = "SDHI1 VccQ";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <3300000>;
++
++		gpios = <&pinctrl RZG2L_GPIO(10, 2) GPIO_ACTIVE_HIGH>;
++
++		gpios-states = <1>;
++		states = <3300000 0 1800000 1>;
++	};
++
++	gpio-keys {
++		compatible = "gpio-keys";
++		pinctrl-names = "default";
++
++		nmi {
++			interrupt-parent = <&icu>;
++			interrupts = <0 IRQ_TYPE_EDGE_FALLING>;
++			linux,code = <4>;
++			label = "NMI";
++			wakeup-source;
++		};
++	};
++
++	clk_ext_camera: clk_ext_camera {
++		compatible = "fixed-clock";
++		#clock-cells = <0>;
++		clock-frequency = <24000000>;
++	};
++
++	ov5645_vdddo_1v8: 1p8v {
++		compatible = "regulator-fixed";
++		regulator-name = "camera_vdddo";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <1800000>;
++		regulator-always-on;
++	};
++
++	ov5645_vdda_2v8: 2p8v {
++		compatible = "regulator-fixed";
++		regulator-name = "camera_vdda";
++		regulator-min-microvolt = <2800000>;
++		regulator-max-microvolt = <2800000>;
++		regulator-always-on;
++	};
++
++	ov5645_vddd_1v5: 1p5v {
++		compatible = "regulator-fixed";
++		regulator-name = "camera_vddd";
++		regulator-min-microvolt = <1500000>;
++		regulator-max-microvolt = <1500000>;
++		regulator-always-on;
++	};
++
++	hdmi-out {
++		compatible = "hdmi-connector";
++		type = "d";
++
++		port {
++			hdmi_con_out: endpoint {
++				remote-endpoint = <&adv7535_out>;
++			};
++		};
++	};
++
++	osc1: cec-clock {
++		compatible = "fixed-clock";
++		#clock-cells = <0>;
++		clock-frequency = <12000000>;
++	};
++	
++	/* The Hub Power */
++	hub_vcc: regulator-hub-vcc {
++		compatible = "regulator-fixed";
++		regulator-name = "hub_vcc";
++		regulator-always-on;
++		regulator-boot-on;
++	};
++
++	/* A proper fixed regulator for the USB PHY VBUS */
++	usb_vbus: regulator-usb-vbus {
++		compatible = "regulator-fixed";
++		regulator-name = "usb_vbus";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		regulator-always-on;
++		regulator-boot-on;
++	};
++};
++
++&du {
++	status = "okay";
++};
++
++&dsi0 {
++	status = "okay";
++
++	ports {
++		port@1 {
++			dsi0_out: endpoint {
++				remote-endpoint = <&adv7535_in>;
++				data-lanes = <1 2 3 4>;
++			};
++		};
++	};
++};
++
++&eth0 {
++	phy-handle = <&phy0>;
++	phy-mode = "rgmii-id";
++	status = "okay";
++
++	mdio {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		phy0: ethernet-phy@1 {
++			compatible = "ethernet-phy-ieee802.3-c22";
++			reg = <1>;
++		};
++	};
++};
++
++&eth1 {
++	phy-handle = <&phy1>;
++	phy-mode = "rgmii-id";
++	status = "okay";
++
++	mdio {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		phy1: ethernet-phy@2 {
++			compatible = "ethernet-phy-ieee802.3-c22";
++			reg = <2>;
++		};
++	};
++};
++
++&pinctrl {
++	scif0_pins: scif0 {
++		pins =  "SCIF_TXD", "SCIF_RXD";
++		renesas,output-impedance = <1>;
++	};
++
++	/* Support pinctrl for SD function of SDHI1 */
++	sdhi1_pins: sd1 {
++		sd1_mux {
++			pinmux = <RZG2L_PORT_PINMUX(9, 4, 14)>; /* SD1_CD */
++		};
++	};
++	
++	eth0_rst_pins: eth0_rst {
++		pinmux = <RZG2L_PORT_PINMUX(8, 4, 0)>; /* Port 8, Pin 4, Function 0 (GPIO) */
++	};
++	
++	eth1_rst_pins: eth1_rst {
++		pinmux = <RZG2L_PORT_PINMUX(8, 5, 0)>; /* Port 8, Pin 4, Function 0 (GPIO) */
++	};
++	
++	/* This "hogs" the pin at the controller level */
++	eth0_rst_hog {
++		gpio-hog;
++		gpios = <RZG2L_GPIO(8, 4) GPIO_ACTIVE_HIGH>;
++		output-high;
++		line-name = "eth0-rst-fixed-high";
++	};
++
++	/* This "hogs" the pin at the controller level */
++	eth1_rst_hog {
++		gpio-hog;
++		gpios = <RZG2L_GPIO(8, 5) GPIO_ACTIVE_HIGH>;
++		output-high;
++		line-name = "eth1-rst-fixed-high";
++	};
++
++	usb20_pins: usb20 {
++		pinmux = <RZG2L_PORT_PINMUX(9, 5, 14)>, /* VBUS */
++				 <RZG2L_PORT_PINMUX(9, 6, 14)>, /* OVC */
++		 	 	 <RZG2L_PORT_PINMUX(11, 2, 0)>; /* RESETn of USB2514 */
++		
++		/* Apply internal pull-up to the OVCC pin so it doesn't float Low */
++		ovcc {
++		        pinmux = <RZG2L_PORT_PINMUX(9, 6, 14)>;
++		        bias-pull-up;
++		};
++	};
++
++	usb30_pins: usb30 {
++		pinmux = <RZG2L_PORT_PINMUX(11, 0, 14)>, /* VBUS */
++				 <RZG2L_PORT_PINMUX(11, 1, 14)>; /* OVC */
++
++		/* Apply internal pull-up to the OVCC pin so it doesn't float Low */
++		ovcc {
++		        pinmux = <RZG2L_PORT_PINMUX(11, 1, 14)>;
++		        bias-pull-up;
++		};
++	};
++
++	i2c0_pins: i2c0 {
++		pinmux = <RZG2L_PORT_PINMUX(3, 0, 1)>, /* I2C0_SDA */
++				 <RZG2L_PORT_PINMUX(3, 1, 1)>; /* I2C0_SCL */
++	};
++
++	i2c1_pins: i2c1 {
++		pinmux = <RZG2L_PORT_PINMUX(3, 2, 1)>, /* I2C1_SDA */
++				 <RZG2L_PORT_PINMUX(3, 3, 1)>; /* I2C1_SCL */
++	};
++
++	i2c2_pins: i2c2 {
++		pinmux = <RZG2L_PORT_PINMUX(3, 4, 1)>, /* I2C2_SDA */
++				 <RZG2L_PORT_PINMUX(3, 5, 1)>; /* I2C2_SCL */
++	};
++
++	i2c3_pins: i2c3 {
++		pinmux = <RZG2L_PORT_PINMUX(3, 6, 1)>, /* I2C3_SDA */
++				 <RZG2L_PORT_PINMUX(3, 7, 1)>; /* I2C3_SCL */
++	};
++
++	i2c6_pins: i2c6 {
++		pinmux = <RZG2L_PORT_PINMUX(4, 4, 1)>, /* I2C6_SDA */
++				 <RZG2L_PORT_PINMUX(4, 5, 1)>; /* I2C6_SCL */
++	};
++
++	i2c8_pins: i2c8 {
++		pinmux = <RZG2L_PORT_PINMUX(0, 6, 1)>, /* I2C8_SDA */
++				 <RZG2L_PORT_PINMUX(0, 7, 1)>; /* I2C8_SCL */
++	};
++	
++	spi2_pins: spi2 {
++		pinmux = <RZG2L_PORT_PINMUX(11, 3, 5)>, /* MISO */
++				 <RZG2L_PORT_PINMUX(11, 4, 5)>, /* MOSI */
++				 <RZG2L_PORT_PINMUX(10, 6, 5)>, /* SSL1 */
++				 <RZG2L_PORT_PINMUX(10, 7, 5)>, /* SSL0 */
++				 <RZG2L_PORT_PINMUX(11, 5, 5)>; /* RSPCK */
++	};
++};
++
++&qextal_clk {
++	clock-frequency = <24000000>;
++};
++
++&rtxin_clk {
++	clock-frequency = <32768>;
++};
++
++&audio_extal_clk {
++	clock-frequency = <22579200>;
++};
++
++&scif {
++	pinctrl-0 = <&scif0_pins>;
++	pinctrl-names = "default";
++
++	status = "okay";
++};
++
++&ostm0 {
++	status = "okay";
++};
++
++&ostm1 {
++	status = "okay";
++};
++
++&wdt1 {
++	status = "okay";
++};
++
++&sdhi0 {
++	vmmc-supply = <&reg_3p3v>;
++	vqmmc-supply = <&reg_1p8v>;
++	bus-width = <8>;
++	mmc-hs200-1_8v;
++	non-removable;
++	fixed-emmc-driver-type = <1>;
++	status = "okay";
++};
++
++&sdhi1 {
++	pinctrl-0 = <&sdhi1_pins>;
++	pinctrl-names = "default";
++	vmmc-supply = <&reg_3p3v>;
++	vqmmc-supply = <&vccq_sdhi1>;
++	bus-width = <4>;
++	sd-uhs-sdr50;
++	sd-uhs-sdr104;
++	status = "okay";
++};
++
++&rtc {
++        status = "okay";
++};
++
++/*---------------------------------------------------------------*/
++&ohci0 {
++	memory-region = <&global_cma>;
++	dr_mode = "host";
++	status = "okay";
++};
++
++&ehci0 {
++	memory-region = <&global_cma>;
++	dr_mode = "host";
++	status = "okay";
++	#address-cells = <1>;
++    #size-cells = <0>;
++
++    hub_2514: hub@1 {
++        compatible = "usb424,2514";
++        reg = <1>;
++        reset-gpios = <&pinctrl RZG2L_GPIO(11, 2) GPIO_ACTIVE_LOW>;
++        vdd-supply = <&hub_vcc>;
++        reset-duration-us = <1000>; 
++        post-reset-delay-us = <5000>;
++    };
++};
++
++&hsusb {
++	dr_mode = "otg";
++	status = "okay";
++};
++
++&usb20phyrst {
++	status = "okay";
++};
++
++&usb2_phy0 {
++	pinctrl-0 = <&usb20_pins>;
++	pinctrl-names = "default";
++	vbus-supply = <&usb_vbus>;
++	dr_mode = "host";
++	status = "okay";
++};
++
++&usb3_phy0 {
++	status = "okay";
++};
++
++&xhci0 {
++	pinctrl-0 = <&usb30_pins>;
++	pinctrl-names = "default";
++	memory-region = <&global_cma>;
++	status = "okay";
++};
++
++&spi2 {
++	pinctrl-0 = <&spi2_pins>;
++	pinctrl-names = "default";
++	status = "okay";
++};
++
++&xspi {
++	status = "okay";
++
++	flash@0 {
++		compatible = "micron,mt25qu128a", "jedec,spi-nor";
++		reg = <0>;
++		m25p,fast-read;
++		spi-max-frequency = <50000000>;
++		spi-tx-bus-width = <4>;
++		spi-rx-bus-width = <4>;
++
++		partitions {
++			compatible = "fixed-partitions";
++			#address-cells = <1>;
++			#size-cells = <1>;
++
++			partition@0 {
++				label = "bl2";
++				reg = <0x00000000 0x00060000>;
++				read-only;
++			};
++
++			partition@60000 {
++				label = "fip";
++				reg = <0x00060000 0x001E0000>;
++				read-only;
++			};
++
++			partition@1E0000 {
++				label = "env";
++				reg = <0x001E0000 0x00020000>;
++				read-only;
++			};
++
++			partition@200000 {
++				label = "test-area";
++				reg = <0x00200000 0x00E00000>;
++			};
++		};
++	};
++};
++
++&i2c0 {
++	pinctrl-0 = <&i2c0_pins>;
++	pinctrl-names = "default";
++	status = "okay";
++};
++
++&i2c1 {
++	pinctrl-0 = <&i2c1_pins>;
++	pinctrl-names = "default";
++	status = "okay";
++
++#if 0	
++	ov5645_csi21: ov5645_csi21@3c {
++		compatible = "ovti,ov5640";
++		reg = <0x3c>;
++		clock-names = "xclk";
++		clocks = <&clk_ext_camera>;
++		clock-frequency = <24000000>;
++		vdddo-supply = <&ov5645_vdddo_1v8>;
++		vdda-supply = <&ov5645_vdda_2v8>;
++		vddd-supply = <&ov5645_vddd_1v5>;
++		enable-gpios = <&pinctrl RZG2L_GPIO(0, 0) GPIO_ACTIVE_HIGH>;
++		
++		/* Dummy pin for reset-gpios */
++		reset-gpios = <&pinctrl RZG2L_GPIO(7, 6) GPIO_ACTIVE_LOW>;
++
++		port {
++			ov5645_to_csi21: endpoint {
++				clock-lanes = <0>;
++				data-lanes = <1 2>;
++				remote-endpoint = <&csi21_in>;
++			};
++		};
++	};
++#endif	
++};
++
++&i2c2 {
++	pinctrl-0 = <&i2c2_pins>;
++	pinctrl-names = "default";
++	status = "okay";
++
++#if 0
++	ov5645_csi20: ov5645_csi20@3c {
++		compatible = "ovti,ov5647";
++		reg = <0x3c>;
++		clock-names = "xclk";
++		clocks = <&clk_ext_camera>;
++		clock-frequency = <25000000>;
++		vdddo-supply = <&ov5645_vdddo_1v8>;
++		vdda-supply = <&ov5645_vdda_2v8>;
++		vddd-supply = <&ov5645_vddd_1v5>;
++		enable-gpios = <&pinctrl RZG2L_GPIO(0, 1) GPIO_ACTIVE_HIGH>;
++
++		/* Dummy pin for reset-gpios */
++		reset-gpios = <&pinctrl RZG2L_GPIO(7, 7) GPIO_ACTIVE_LOW>;
++
++		port {
++			ov5645_to_csi20: endpoint {
++				clock-lanes = <0>;
++				data-lanes = <1 2>;
++				remote-endpoint = <&csi20_in>;
++			};
++		};
++	};
++#endif	
++};
++
++&i2c3 {
++	pinctrl-0 = <&i2c3_pins>;
++	pinctrl-names = "default";
++	status = "disabled";
++
++	adv7535: hdmi@3d {
++		compatible = "adi,adv7535";
++		reg = <0x3d>;
++
++		clocks = <&osc1>;
++		clock-names = "cec";
++		avdd-supply = <&reg_1p8v>;
++		dvdd-supply = <&reg_1p8v>;
++		pvdd-supply = <&reg_1p8v>;
++		a2vdd-supply = <&reg_1p8v>;
++		v3p3-supply = <&reg_3p3v>;
++		v1p2-supply = <&reg_1p8v>;
++
++		interrupt-parent = <&pinctrl>;
++		interrupts = <RZG2L_GPIO(0, 2) IRQ_TYPE_LEVEL_LOW>;
++
++		adi,dsi-lanes = <4>;
++
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			port@0 {
++				reg = <0>;
++				adv7535_in: endpoint@0 {
++					remote-endpoint = <&dsi0_out>;
++				};
++			};
++
++			port@1 {
++				reg = <1>;
++				adv7535_out: endpoint@1 {
++				remote-endpoint = <&hdmi_con_out>;
++				};
++			};
++		};
++	};
++};
++
++&i2c8 {
++	pinctrl-0 = <&i2c8_pins>;
++	pinctrl-names = "default";
++	status = "okay";
++};
++
++
++&cru0 {
++	status = "okay";
++};
++
++#if 0
++&csi20 {
++	status = "okay";
++
++	ports {
++		port {
++			csi20_in: endpoint {
++				clock-lanes = <0>;
++				data-lanes = <1 2>;
++				remote-endpoint = <&ov5645_to_csi20>;
++			};
++		};
++	};
++};
++
++&cru1 {
++	status = "okay";
++};
++#endif
++
++#if 0
++&csi21 {
++	status = "okay";
++
++	ports {
++		port {
++			csi21_in: endpoint {
++				clock-lanes = <0>;
++				data-lanes = <1 2>;
++				remote-endpoint = <&ov5645_to_csi21>;
++			};
++		};
++	};
++};
++#endif
+\ No newline at end of file
+-- 
+2.43.0
+

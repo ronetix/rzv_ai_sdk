@@ -22,3 +22,5 @@ patch patches/0019-pwm-gpt-rzg2l-Fix-wrongly-generated-output-pulse-num.patch
 patch patches/0001-media-uvcvideo-Skip-parsing-frames-of-type-UVC_VS_UN.patch
 # CRU setting
 patch patches/0001-cru-setting-AMnAXIATTR-AMnFIFO.patch
+patch patches/0001-Add-DTS-file-Ronetix-SoM-RNX-RZV2N-SMARC.patch
+

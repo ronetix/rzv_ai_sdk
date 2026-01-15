@@ -10,4 +10,5 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI:append = " \
 	file://0001-dmd-on-setting.patch \
 	file://0000-ddr_param_def_lpddr4-rzv2n_1.patch \
+	file://0001-Add-support-for-Ronetix-SoM-RNX-RZV2N-SMARC.patch \
 "
