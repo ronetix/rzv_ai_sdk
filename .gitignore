@@ -1,0 +1,30 @@
+# --- Python Cache (Your current issue) ---
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Bitbake/Yocto Build Artifacts ---
+build/
+build-*/
+tmp/
+sstate-cache/
+downloads/
+bitbake-builds/
+
+# --- Artifacts & Logs ---
+*.log
+*.sum
+*.done
+pseudodone
+bitbake.lock
+
+# --- Patch & Conflict Artifacts ---
+*.orig
+*.rej
+*~
+
+# --- IDE & System Files ---
+.vscode/
+.idea/
+.DS_Store
+*.swp
